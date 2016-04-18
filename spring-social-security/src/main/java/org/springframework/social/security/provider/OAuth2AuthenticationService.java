@@ -99,7 +99,7 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 				Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
 				return new SocialAuthenticationToken(connection, null);
 			} catch (RestClientException e) {
-				logger.debug("failed to exchange for access", e);
+				logger.error("An error occured while contacting the IdP with the code flow callback.", e);
 				return null;
 			}
 		} else {
