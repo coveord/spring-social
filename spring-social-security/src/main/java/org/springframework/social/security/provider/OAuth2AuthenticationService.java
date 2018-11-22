@@ -118,7 +118,7 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 				logger.error(EXCEPTION_LOG_MESSAGE, e);
 				return null;
 			}
-		else {
+		} else {
 			return null;
 		}
 	}
