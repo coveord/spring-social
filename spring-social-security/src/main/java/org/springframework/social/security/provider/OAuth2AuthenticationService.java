@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.support.OAuth2ConnectionFactory;
 import org.springframework.social.oauth2.AccessGrant;
@@ -31,7 +32,10 @@ import org.springframework.social.security.SocialAuthenticationRedirectException
 import org.springframework.social.security.SocialAuthenticationToken;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * @author Stefan Fussennegger
@@ -40,6 +44,9 @@ import org.springframework.web.client.RestClientException;
 public class OAuth2AuthenticationService<S> extends AbstractSocialAuthenticationService<S> {
 
 	protected final Log logger = LogFactory.getLog(getClass());
+
+	public static final String EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY = "org.springframework.social.security.provider.ExceptionDetail";
+	private static final String EXCEPTION_LOG_MESSAGE = "An error occured while contacting the IdP with the code flow callback.";
 	
 	private OAuth2ConnectionFactory<S> connectionFactory;
 
@@ -92,17 +99,26 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 			params.add("state", connectionFactory.generateState()); // TODO: Verify the state value after callback
 			throw new SocialAuthenticationRedirectException(getConnectionFactory().getOAuthOperations().buildAuthenticateUrl(params));
 		} else if (StringUtils.hasText(code)) {
-			try {
-				String returnToUrl = buildReturnToUrl(request);
-				AccessGrant accessGrant = getConnectionFactory().getOAuthOperations().exchangeForAccess(code, returnToUrl, null);
-				// TODO avoid API call if possible (auth using token would be fine)
-				Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
-				return new SocialAuthenticationToken(connection, null);
-			} catch (RestClientException e) {
-				logger.error("An error occured while contacting the IdP with the code flow callback.", e);
-				return null;
-			}
-		} else {
+		  try {
+		    String returnToUrl = buildReturnToUrl(request);
+		    AccessGrant accessGrant = getConnectionFactory().getOAuthOperations().exchangeForAccess(code, returnToUrl, null);
+		    // TODO avoid API call if possible (auth using token would be fine)
+            Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
+            return new SocialAuthenticationToken(connection, null);
+          } catch (HttpClientErrorException e) {
+		    saveDetailedExceptionInSessionAttribute(e);
+            if (HttpStatus.FORBIDDEN.equals(e.getStatusCode())) {
+              logger.warn(EXCEPTION_LOG_MESSAGE, e);
+            } else {
+              logger.error(EXCEPTION_LOG_MESSAGE, e);
+            }
+            return null;
+          } catch (RestClientException e) {
+		    saveDetailedExceptionInSessionAttribute(e);
+            logger.error(EXCEPTION_LOG_MESSAGE, e);
+            return null;
+          }
+        else {
 			return null;
 		}
 	}
@@ -132,4 +148,9 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 		}
 	}
 
+    private void saveDetailedExceptionInSessionAttribute(Throwable exception)
+    {
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+        servletRequestAttributes.getRequest().getSession().setAttribute(EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY, exception);
+    }
 }
