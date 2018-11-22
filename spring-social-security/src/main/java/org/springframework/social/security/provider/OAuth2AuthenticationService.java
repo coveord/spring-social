@@ -99,26 +99,26 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 			params.add("state", connectionFactory.generateState()); // TODO: Verify the state value after callback
 			throw new SocialAuthenticationRedirectException(getConnectionFactory().getOAuthOperations().buildAuthenticateUrl(params));
 		} else if (StringUtils.hasText(code)) {
-		  try {
-		    String returnToUrl = buildReturnToUrl(request);
-		    AccessGrant accessGrant = getConnectionFactory().getOAuthOperations().exchangeForAccess(code, returnToUrl, null);
-		    // TODO avoid API call if possible (auth using token would be fine)
-            Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
-            return new SocialAuthenticationToken(connection, null);
-          } catch (HttpClientErrorException e) {
-		    saveDetailedExceptionInSessionAttribute(e);
-            if (HttpStatus.FORBIDDEN.equals(e.getStatusCode())) {
-              logger.warn(EXCEPTION_LOG_MESSAGE, e);
-            } else {
-              logger.error(EXCEPTION_LOG_MESSAGE, e);
-            }
-            return null;
-          } catch (RestClientException e) {
-		    saveDetailedExceptionInSessionAttribute(e);
-            logger.error(EXCEPTION_LOG_MESSAGE, e);
-            return null;
-          }
-        else {
+      try {
+		  	String returnToUrl = buildReturnToUrl(request);
+		  	AccessGrant accessGrant = getConnectionFactory().getOAuthOperations().exchangeForAccess(code, returnToUrl, null);
+		  	// TODO avoid API call if possible (auth using token would be fine)
+      	Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
+      	return new SocialAuthenticationToken(connection, null);
+    	} catch (HttpClientErrorException e) {
+		  	saveDetailedExceptionInSessionAttribute(e);
+      	if (HttpStatus.FORBIDDEN.equals(e.getStatusCode())) {
+        	logger.warn(EXCEPTION_LOG_MESSAGE, e);
+      	} else {
+        	logger.error(EXCEPTION_LOG_MESSAGE, e);
+      	}
+      	return null;
+    	} catch (RestClientException e) {
+		  	saveDetailedExceptionInSessionAttribute(e);
+      	logger.error(EXCEPTION_LOG_MESSAGE, e);
+      	return null;
+    	}
+    else {
 			return null;
 		}
 	}
