@@ -148,9 +148,9 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 		}
 	}
 
-		private void saveDetailedExceptionInSessionAttribute(Throwable exception)
-		{
-				ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-				servletRequestAttributes.getRequest().getSession().setAttribute(EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY, exception);
-		}
+	private void saveDetailedExceptionInSessionAttribute(Throwable exception)
+	{
+		ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
+		servletRequestAttributes.getRequest().getSession().setAttribute(EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY, exception);
+	}
 }
