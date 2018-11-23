@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.support.OAuth2ConnectionFactory;
 import org.springframework.social.oauth2.AccessGrant;
@@ -31,6 +32,7 @@ import org.springframework.social.security.SocialAuthenticationRedirectException
 import org.springframework.social.security.SocialAuthenticationToken;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
 /**
@@ -40,6 +42,9 @@ import org.springframework.web.client.RestClientException;
 public class OAuth2AuthenticationService<S> extends AbstractSocialAuthenticationService<S> {
 
 	protected final Log logger = LogFactory.getLog(getClass());
+
+	public static final String EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY = "org.springframework.social.security.provider.ExceptionDetail";
+	private static final String EXCEPTION_LOG_MESSAGE = "An error occured while contacting the IdP with the code flow callback.";
 	
 	private OAuth2ConnectionFactory<S> connectionFactory;
 
@@ -98,8 +103,17 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 				// TODO avoid API call if possible (auth using token would be fine)
 				Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
 				return new SocialAuthenticationToken(connection, null);
+			} catch (HttpClientErrorException e) {
+				saveDetailedExceptionInSessionAttribute(request, e);
+				if (HttpStatus.FORBIDDEN.equals(e.getStatusCode())) {
+					logger.warn(EXCEPTION_LOG_MESSAGE, e);
+				} else {
+					logger.error(EXCEPTION_LOG_MESSAGE, e);
+				}
+				return null;
 			} catch (RestClientException e) {
-				logger.error("An error occured while contacting the IdP with the code flow callback.", e);
+				saveDetailedExceptionInSessionAttribute(request, e);
+				logger.error(EXCEPTION_LOG_MESSAGE, e);
 				return null;
 			}
 		} else {
@@ -132,4 +146,8 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 		}
 	}
 
+	private void saveDetailedExceptionInSessionAttribute(HttpServletRequest request, Throwable exception)
+	{
+		request.getSession().setAttribute(EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY, exception);
+	}
 }
