@@ -34,8 +34,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * @author Stefan Fussennegger
@@ -106,7 +104,7 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 				Connection<S> connection = getConnectionFactory().createConnection(accessGrant);
 				return new SocialAuthenticationToken(connection, null);
 			} catch (HttpClientErrorException e) {
-				saveDetailedExceptionInSessionAttribute(e);
+				saveDetailedExceptionInSessionAttribute(request, e);
 				if (HttpStatus.FORBIDDEN.equals(e.getStatusCode())) {
 					logger.warn(EXCEPTION_LOG_MESSAGE, e);
 				} else {
@@ -114,7 +112,7 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 				}
 				return null;
 			} catch (RestClientException e) {
-				saveDetailedExceptionInSessionAttribute(e);
+				saveDetailedExceptionInSessionAttribute(request, e);
 				logger.error(EXCEPTION_LOG_MESSAGE, e);
 				return null;
 			}
@@ -148,9 +146,8 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 		}
 	}
 
-	private void saveDetailedExceptionInSessionAttribute(Throwable exception)
+	private void saveDetailedExceptionInSessionAttribute(HttpServletRequest request, Throwable exception)
 	{
-		ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-		servletRequestAttributes.getRequest().getSession().setAttribute(EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY, exception);
+		request.getSession().setAttribute(EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY, exception);
 	}
 }
