@@ -33,6 +33,7 @@ import org.springframework.social.security.SocialAuthenticationToken;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 
 /**
@@ -44,6 +45,7 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	public static final String EXCEPTION_DETAIL_SESSION_ATTRIBUTE_KEY = "org.springframework.social.security.provider.ExceptionDetail";
+	private static final String EXCEPTION_WITH_BODY_LOG_MESSAGE = "An error occured while contacting the IdP with the code flow callback. Response body : '%s'.";
 	private static final String EXCEPTION_LOG_MESSAGE = "An error occured while contacting the IdP with the code flow callback.";
 	
 	private OAuth2ConnectionFactory<S> connectionFactory;
@@ -106,10 +108,14 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 			} catch (HttpClientErrorException e) {
 				saveDetailedExceptionInSessionAttribute(request, e);
 				if (HttpStatus.FORBIDDEN.equals(e.getStatusCode())) {
-					logger.warn(EXCEPTION_LOG_MESSAGE, e);
+					logger.warn(String.format(EXCEPTION_WITH_BODY_LOG_MESSAGE, e.getResponseBodyAsString()), e);
 				} else {
-					logger.error(EXCEPTION_LOG_MESSAGE, e);
+					logger.error(String.format(EXCEPTION_WITH_BODY_LOG_MESSAGE, e.getResponseBodyAsString()), e);
 				}
+				return null;
+			} catch (HttpServerErrorException e) {
+				saveDetailedExceptionInSessionAttribute(request, e);
+				logger.error(String.format(EXCEPTION_WITH_BODY_LOG_MESSAGE, e.getResponseBodyAsString()), e);
 				return null;
 			} catch (RestClientException e) {
 				saveDetailedExceptionInSessionAttribute(request, e);
