@@ -222,7 +222,6 @@ project("spring-social-web") {
         testCompile("org.springframework:spring-test:$springVersion")
         testCompile("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
     }
-    metaInf << files("src/main/resources/tld/spring-social.tld")
 }
 
 project("spring-social-config") {
