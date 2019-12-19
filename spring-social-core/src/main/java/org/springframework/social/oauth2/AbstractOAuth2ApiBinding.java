@@ -202,7 +202,7 @@ public abstract class AbstractOAuth2ApiBinding implements ApiBinding {
 			client = new RestTemplate();
 			client.setMessageConverters(messageConverters);
 		}
-		client.setRequestFactory(ClientHttpRequestFactorySelector.getRequestFactory());
+		client.setRequestFactory(ClientHttpRequestFactorySelector.bufferRequests(ClientHttpRequestFactorySelector.getRequestFactory()));
 		return client;
 	}
 
