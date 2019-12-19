@@ -24,14 +24,6 @@ configure(allprojects) {
     apply plugin: "javadocHotfix"
     apply plugin: 'maven'
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: "file:///mnt/dfsdev_Products/Maven/repository")
-        }
-    }
-}
-
     compileJava {
         sourceCompatibility=1.5
         targetCompatibility=1.5
@@ -135,6 +127,18 @@ configure(subprojects) { subproject ->
         }
         //options.overview = "${projectDir}/src/main/java/overview.html"
     }
+
+apply plugin: 'maven'
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://maven.cloud.coveo.com/artifactory/ext-release-local"){
+            authentication(userName: "", password: "")
+        }
+        }
+    }
+}
 
     task sourcesJar(type: Jar, dependsOn:classes) {
         classifier = "sources"
